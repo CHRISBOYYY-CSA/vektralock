@@ -1,0 +1,39 @@
+// VektraLock database schema
+// Run: npx prisma migrate dev --name init  (after setting DATABASE_URL in .env)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String   // bcrypt hash, never plain text
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  files     File[]
+}
+
+model File {
+  id            Int       @id @default(autoincrement())
+  filename      String    // original name shown to the user
+  storedName    String    // name/key on disk (Phase 1/2) or S3 key (Phase 3)
+  mimeType      String
+  size          Int       // bytes
+  category      String    @default("general")
+  ownerId       Int
+  owner         User      @relation(fields: [ownerId], references: [id])
+  shareToken    String?   @unique // set when a temporary share link is generated
+  shareExpires  DateTime?
+  createdAt     DateTime  @default(now())
+}
